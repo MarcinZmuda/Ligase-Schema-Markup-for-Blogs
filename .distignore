@@ -1,0 +1,15 @@
+.distignore
+.editorconfig
+.gitignore
+.github/
+.phpunit.cache/
+composer.json
+composer.lock
+phpunit.xml
+tests/
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+node_modules/
+vendor/
+*.zip
