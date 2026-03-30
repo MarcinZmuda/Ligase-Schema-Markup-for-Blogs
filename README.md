@@ -10,7 +10,7 @@
   <a href="https://wordpress.org/"><img src="https://img.shields.io/badge/WordPress-6.0%2B-blue?logo=wordpress" alt="WordPress"></a>
   <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-8.0%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="https://www.gnu.org/licenses/gpl-2.0.html"><img src="https://img.shields.io/badge/License-GPLv2-green.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-1.0.0-orange.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.0.0-orange.svg" alt="Version">
 </p>
 
 ---

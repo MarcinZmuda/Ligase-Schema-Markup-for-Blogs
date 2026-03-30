@@ -1,0 +1,550 @@
+/* Ligase Admin Styles */
+
+/* =========================================================================
+   Layout Grid
+   ========================================================================= */
+
+.ligase-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+@media (max-width: 960px) {
+    .ligase-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================================
+   Cards
+   ========================================================================= */
+
+.ligase-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.ligase-card h2 {
+    margin: 0 0 12px;
+    padding: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1D2327;
+}
+
+.ligase-card h3 {
+    margin: 12px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ligase-card-wide {
+    grid-column: 1 / -1;
+}
+
+.ligase-card-score {
+    text-align: center;
+}
+
+/* =========================================================================
+   Score Circle
+   ========================================================================= */
+
+.ligase-score-circle {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 2px;
+    padding: 20px;
+}
+
+.ligase-score-value {
+    font-size: 56px;
+    font-weight: 700;
+    color: var(--score-color, #1E429F);
+    line-height: 1;
+}
+
+.ligase-score-max {
+    font-size: 20px;
+    color: #6B7280;
+}
+
+/* =========================================================================
+   Stats Row
+   ========================================================================= */
+
+.ligase-stats-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.ligase-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.ligase-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.ligase-stat-label {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 4px;
+}
+
+.ligase-stat-green { color: #10B981; }
+.ligase-stat-yellow { color: #F59E0B; }
+.ligase-stat-red { color: #EF4444; }
+
+.ligase-stats-note {
+    color: #6B7280;
+    font-size: 12px;
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* =========================================================================
+   Score Badges
+   ========================================================================= */
+
+.ligase-score-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ligase-score-good {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.ligase-score-warn {
+    background: #FEF3C7;
+    color: #78350F;
+}
+
+.ligase-score-bad {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+/* =========================================================================
+   Badges
+   ========================================================================= */
+
+.ligase-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ligase-badge-pass {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.ligase-badge-fail {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.ligase-badge-warn {
+    background: #FEF3C7;
+    color: #78350F;
+}
+
+/* =========================================================================
+   Checks Table
+   ========================================================================= */
+
+.ligase-checks-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ligase-checks-table th,
+.ligase-checks-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #E5E7EB;
+    font-size: 13px;
+}
+
+.ligase-checks-table th {
+    font-weight: 600;
+    color: #6B7280;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* =========================================================================
+   Toolbar
+   ========================================================================= */
+
+.ligase-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.ligase-toolbar-info {
+    margin-left: auto;
+    color: #6B7280;
+    font-size: 13px;
+}
+
+/* =========================================================================
+   Actions
+   ========================================================================= */
+
+.ligase-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* =========================================================================
+   Notifications
+   ========================================================================= */
+
+.ligase-notice {
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.ligase-notice-success {
+    background: #D1FAE5;
+    color: #065F46;
+    border-left: 3px solid #10B981;
+}
+
+.ligase-notice-error {
+    background: #FEE2E2;
+    color: #991B1B;
+    border-left: 3px solid #EF4444;
+}
+
+.ligase-notice-warning {
+    background: #FEF3C7;
+    color: #78350F;
+    border-left: 3px solid #F59E0B;
+}
+
+.ligase-notice-info {
+    background: #DBEAFE;
+    color: #1E40AF;
+    border-left: 3px solid #3B82F6;
+}
+
+/* =========================================================================
+   Recommendations
+   ========================================================================= */
+
+.ligase-recommendations {
+    text-align: left;
+    margin-top: 16px;
+}
+
+.ligase-recommendations ul {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ligase-recommendations li {
+    padding: 6px 0 6px 20px;
+    position: relative;
+    font-size: 13px;
+    color: #4B5563;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.ligase-recommendations li::before {
+    content: '\2022';
+    position: absolute;
+    left: 4px;
+    color: #F59E0B;
+    font-weight: bold;
+}
+
+/* =========================================================================
+   Issues List
+   ========================================================================= */
+
+.ligase-issues-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ligase-issues-list li {
+    font-size: 12px;
+    color: #6B7280;
+    padding: 2px 0;
+}
+
+/* =========================================================================
+   Modal
+   ========================================================================= */
+
+.ligase-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ligase-modal-content {
+    background: #fff;
+    border-radius: 6px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.ligase-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.ligase-modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.ligase-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6B7280;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ligase-modal-close:hover {
+    color: #1D2327;
+}
+
+.ligase-json-preview {
+    padding: 20px;
+    margin: 0;
+    overflow: auto;
+    flex: 1;
+    background: #F9FAFB;
+    font-size: 12px;
+    line-height: 1.5;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* =========================================================================
+   Wikidata Search
+   ========================================================================= */
+
+.ligase-wikidata-search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ligase-wikidata-result {
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background: #F9FAFB;
+}
+
+.ligase-wikidata-result strong {
+    font-size: 14px;
+}
+
+.ligase-wikidata-result .description {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 2px;
+}
+
+.ligase-wikidata-result .ligase-wikidata-url {
+    font-size: 11px;
+    color: #2563EB;
+    word-break: break-all;
+}
+
+/* =========================================================================
+   Auditor Controls
+   ========================================================================= */
+
+.ligase-auditor-controls {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.ligase-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ligase-control-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* =========================================================================
+   Status text
+   ========================================================================= */
+
+.ligase-status-text {
+    font-size: 13px;
+    color: #6B7280;
+    font-style: italic;
+}
+
+/* =========================================================================
+   Checkbox row
+   ========================================================================= */
+
+.ligase-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.ligase-checkbox-row input[type="checkbox"] {
+    margin: 0;
+}
+
+/* =========================================================================
+   Import/Export
+   ========================================================================= */
+
+.ligase-import-export {
+    max-width: 600px;
+}
+
+/* =========================================================================
+   Posts table
+   ========================================================================= */
+
+.ligase-posts-table code {
+    font-size: 12px;
+    background: #F3F4F6;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* =========================================================================
+   Metabox (existing)
+   ========================================================================= */
+
+.ligase-metabox-field {
+    margin-bottom: 12px;
+}
+
+.ligase-metabox-field label {
+    display: block;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #1D2327;
+}
+
+.ligase-metabox-field select,
+.ligase-metabox-field input[type="text"] {
+    width: 100%;
+}
+
+.ligase-metabox-score {
+    background: #F0F0F1;
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+.ligase-metabox-score strong {
+    color: #1E429F;
+}
+
+/* =========================================================================
+   Loading spinner
+   ========================================================================= */
+
+.ligase-loading {
+    text-align: center;
+    padding: 40px;
+    color: #6B7280;
+}
+
+.ligase-loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E5E7EB;
+    border-top-color: #1E429F;
+    border-radius: 50%;
+    animation: ligase-spin 0.6s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+@keyframes ligase-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* =========================================================================
+   User profile fields
+   ========================================================================= */
+
+.ligase-user-fields h2 {
+    font-size: 1.3em;
+    padding-top: 10px;
+    border-top: 1px solid #c3c4c7;
+}

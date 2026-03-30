@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ligase/faq",
+  "title": "FAQ Schema",
+  "description": "Dodaj FAQ z automatycznym generowaniem FAQPage schema.org",
+  "category": "text",
+  "icon": "editor-help",
+  "textdomain": "ligase",
+  "attributes": {
+    "items": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": { "type": "string", "default": "" },
+          "answer": { "type": "string", "default": "" }
+        }
+      }
+    }
+  },
+  "editorScript": "file:./index.js"
+}
