@@ -12,7 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 wp_nonce_field( 'ligase_meta_save', 'ligase_meta_nonce' );
 
-$schema_type = get_post_meta( $post->ID, '_ligase_schema_type', true ) ?: 'BlogPosting';
+$opts           = (array) get_option( 'ligase_options', array() );
+$global_default = $opts['default_schema_type'] ?? 'BlogPosting';
+$schema_type    = get_post_meta( $post->ID, '_ligase_schema_type', true ) ?: $global_default;
 
 // All toggle flags
 $toggles = array(

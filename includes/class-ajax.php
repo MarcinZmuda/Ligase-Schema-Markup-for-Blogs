@@ -57,6 +57,7 @@ class Ligase_Ajax {
 			'ligase_save_schema_rule',
 			'ligase_delete_schema_rule',
 			'ligase_toggle_schema_rule',
+			'ligase_bulk_change_schema_type',
 		);
 
 		foreach ( $actions as $action ) {
@@ -1204,4 +1205,58 @@ class Ligase_Ajax {
 		Ligase_Schema_Rules::save_rules( $rules );
 		wp_send_json_success();
 	}
+	/**
+	 * Bulk change schema type for ALL published posts.
+	 */
+	public function handle_ligase_bulk_change_schema_type(): void {
+		$this->verify_request();
+
+		$allowed = array( 'BlogPosting', 'Article', 'NewsArticle', 'TechArticle', 'LiveBlogPosting' );
+		$type    = sanitize_text_field( wp_unslash( $_POST['schema_type'] ?? '' ) );
+
+		if ( ! in_array( $type, $allowed, true ) ) {
+			wp_send_json_error( array( 'message' => 'Nieprawidłowy typ schema.' ) );
+		}
+
+		global $wpdb;
+
+		// Update all posts that already have a schema type set
+		$updated = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE {$wpdb->postmeta} SET meta_value = %s
+			 WHERE meta_key = '_ligase_schema_type'
+			 AND post_id IN (
+				 SELECT ID FROM {$wpdb->posts}
+				 WHERE post_type = 'post' AND post_status = 'publish'
+			 )",
+			$type
+		) );
+
+		// Insert meta for posts that have no schema type yet
+		$posts_without = $wpdb->get_col(
+			"SELECT ID FROM {$wpdb->posts} p
+			 WHERE p.post_type = 'post' AND p.post_status = 'publish'
+			 AND NOT EXISTS (
+				 SELECT 1 FROM {$wpdb->postmeta} m
+				 WHERE m.post_id = p.ID AND m.meta_key = '_ligase_schema_type'
+			 )"
+		);
+
+		foreach ( $posts_without as $post_id ) {
+			update_post_meta( (int) $post_id, '_ligase_schema_type', $type );
+			$updated++;
+		}
+
+		// Also update the global default in options
+		$opts = (array) get_option( 'ligase_options', array() );
+		$opts['default_schema_type'] = $type;
+		update_option( 'ligase_options', $opts );
+
+		// Invalidate all schema cache
+		Ligase_Cache::invalidate_all();
+
+		Ligase_Logger::info( 'Bulk schema type change.', array( 'type' => $type, 'updated' => $updated ) );
+
+		wp_send_json_success( array( 'updated' => $updated, 'type' => $type ) );
+	}
+
 }

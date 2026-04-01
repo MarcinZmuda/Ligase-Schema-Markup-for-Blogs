@@ -49,13 +49,21 @@ class Ligase_Validator {
 
             // Validate per type
             match ( $type ) {
-                'Article', 'BlogPosting', 'NewsArticle' => $this->validate_article( $item, $errors, $warnings ),
+                'Article', 'BlogPosting', 'NewsArticle', 'TechArticle', 'LiveBlogPosting'
+                                => $this->validate_article( $item, $errors, $warnings ),
                 'Person'        => $this->validate_person( $item, $errors, $warnings ),
                 'Organization'  => $this->validate_organization( $item, $errors, $warnings ),
                 'Review'        => $this->validate_review( $item, $errors, $warnings ),
                 'FAQPage'       => $this->validate_faq( $item, $errors, $warnings ),
+                'HowTo'         => $this->validate_howto( $item, $errors, $warnings ),
                 'VideoObject'   => $this->validate_video( $item, $errors, $warnings ),
                 'Event'         => $this->validate_event( $item, $errors, $warnings ),
+                'Course'        => $this->validate_course( $item, $errors, $warnings ),
+                'SoftwareApplication' => $this->validate_software( $item, $errors, $warnings ),
+                'ClaimReview'   => $this->validate_claim_review( $item, $errors, $warnings ),
+                'QAPage'        => $this->validate_qa_page( $item, $errors, $warnings ),
+                'LocalBusiness' => $this->validate_local_business( $item, $errors, $warnings ),
+                'Service'       => $this->validate_service( $item, $errors, $warnings ),
                 default         => null,
             };
         }
@@ -104,8 +112,11 @@ class Ligase_Validator {
             $errors[] = 'Article: brak image (wymagane dla rich results).';
         }
 
-        if ( empty( $s['publisher'] ) ) {
+        $publisher = $s['publisher'] ?? [];
+        if ( empty( $publisher ) ) {
             $warnings[] = 'Article: brak publisher.';
+        } elseif ( empty( $publisher['name'] ) && empty( $publisher['@id'] ) ) {
+            $warnings[] = 'Article: publisher nie ma name ani @id.';
         }
 
         if ( empty( $s['dateModified'] ) ) {
@@ -116,8 +127,10 @@ class Ligase_Validator {
             $warnings[] = 'Article: brak description.';
         }
 
-        if ( empty( $s['speakable'] ) ) {
-            $warnings[] = 'Article: brak speakable — zmniejsza szanse na cytowanie przez AI.';
+        // speakable is intentionally optional — only warn if CSS selectors are configured globally
+        $opts = (array) get_option( 'ligase_options', array() );
+        if ( empty( $s['speakable'] ) && ! empty( $opts['speakable_selectors'] ) ) {
+            $warnings[] = 'Article: brak speakable mimo skonfigurowanych selektorów CSS.';
         }
     }
 
@@ -126,16 +139,29 @@ class Ligase_Validator {
             $errors[] = 'Person: brak name.';
         }
 
+        // Build edit-profile URL for this author if we can identify them
+        $author_url = '';
+        if ( ! empty( $s['@id'] ) ) {
+            // @id format: https://site.com/#author-{id}
+            preg_match( '/#author-(\d+)$/', $s['@id'], $m );
+            if ( ! empty( $m[1] ) ) {
+                $author_url = admin_url( 'user-edit.php?user_id=' . $m[1] );
+            }
+        }
+        if ( ! $author_url ) {
+            $author_url = admin_url( 'profile.php' );
+        }
+
+        $fix_link = ' → <a href="' . esc_url( $author_url ) . '">Edytuj profil autora</a>';
+
         if ( empty( $s['sameAs'] ) ) {
-            $warnings[] = 'Person: brak sameAs — dodaj LinkedIn/Wikidata dla E-E-A-T.';
+            $warnings[] = 'Person: brak sameAs (LinkedIn, Wikidata) — ważne dla E-E-A-T. Uzupełnij raz, działa dla wszystkich postów.' . $fix_link;
         }
-
         if ( empty( $s['knowsAbout'] ) ) {
-            $warnings[] = 'Person: brak knowsAbout — wazne dla AI search.';
+            $warnings[] = 'Person: brak knowsAbout (ekspertyza) — ważne dla AI search. Uzupełnij raz, działa dla wszystkich postów.' . $fix_link;
         }
-
         if ( empty( $s['jobTitle'] ) ) {
-            $warnings[] = 'Person: brak jobTitle.';
+            $warnings[] = 'Person: brak jobTitle (stanowisko). Uzupełnij raz, działa dla wszystkich postów.' . $fix_link;
         }
     }
 
@@ -144,12 +170,18 @@ class Ligase_Validator {
             $errors[] = 'Organization: brak name.';
         }
 
-        if ( empty( $s['logo'] ) ) {
-            $warnings[] = 'Organization: brak logo (wymagane dla Article rich results).';
+        if ( empty( $s['logo'] ) && empty( $s['@id'] ) ) {
+            $warnings[] = 'Organization: brak logo (wymagane dla Article rich results) — dodaj w Ustawienia → Organizacja.';
+        } elseif ( ! empty( $s['@id'] ) && empty( $s['logo'] ) ) {
+            // @id reference — logo is on the full Organization object, not here
+        } elseif ( empty( $s['logo'] ) ) {
+            $org_link = ' → <a href="' . esc_url( admin_url( 'admin.php?page=ligase-ustawienia&tab=organization' ) ) . '">Ligase → Ustawienia → Organizacja</a>';
+            $warnings[] = 'Organization: brak logo — wymagane dla Article rich results.' . $org_link;
         }
 
         if ( empty( $s['sameAs'] ) ) {
-            $warnings[] = 'Organization: brak sameAs — dodaj Wikidata/LinkedIn.';
+            $settings_link = ' → <a href="' . esc_url( admin_url( 'admin.php?page=ligase-ustawienia&tab=social' ) ) . '">Ligase → Ustawienia → Social & Entity</a>';
+            $warnings[] = 'Organization: brak sameAs (Wikidata, LinkedIn). Uzupełnij raz dla całej witryny.' . $settings_link;
         }
     }
 
@@ -205,6 +237,187 @@ class Ligase_Validator {
 
         if ( empty( $s['location'] ) ) {
             $warnings[] = 'Event: brak location.';
+        }
+    }
+
+    private function validate_howto( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['name'] ) ) {
+            $errors[] = 'HowTo: brak name (wymagane).';
+        }
+
+        $steps = $s['step'] ?? [];
+        if ( empty( $steps ) || count( $steps ) < 1 ) {
+            $errors[] = 'HowTo: brak step — minimum 1 krok wymagany przez Google.';
+        } else {
+            foreach ( $steps as $i => $step ) {
+                if ( empty( $step['text'] ) && empty( $step['name'] ) ) {
+                    $errors[] = 'HowTo: krok #' . ( $i + 1 ) . ' nie ma name ani text.';
+                }
+            }
+        }
+
+        if ( empty( $s['totalTime'] ) ) {
+            $warnings[] = 'HowTo: brak totalTime (ISO 8601, np. PT30M) — zalecane.';
+        }
+
+        if ( empty( $s['image'] ) ) {
+            $warnings[] = 'HowTo: brak image — zalecane dla rich results.';
+        }
+    }
+
+    private function validate_course( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['name'] ) ) {
+            $errors[] = 'Course: brak name (wymagane).';
+        }
+
+        if ( empty( $s['description'] ) ) {
+            $errors[] = 'Course: brak description (wymagane).';
+        }
+
+        if ( empty( $s['provider'] ) ) {
+            $warnings[] = 'Course: brak provider — Google zaleca wskazanie organizacji.';
+        }
+
+        if ( empty( $s['hasCourseInstance'] ) ) {
+            $warnings[] = 'Course: brak hasCourseInstance — wymagane do wyświetlenia w Google Search.';
+        } else {
+            foreach ( (array) $s['hasCourseInstance'] as $instance ) {
+                if ( empty( $instance['courseMode'] ) ) {
+                    $warnings[] = 'Course > CourseInstance: brak courseMode (online/onsite/blended).';
+                }
+            }
+        }
+    }
+
+    private function validate_software( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['name'] ) ) {
+            $errors[] = 'SoftwareApplication: brak name (wymagane).';
+        }
+
+        if ( empty( $s['applicationCategory'] ) ) {
+            $warnings[] = 'SoftwareApplication: brak applicationCategory (np. WebApplication, MobileApplication).';
+        }
+
+        if ( empty( $s['operatingSystem'] ) ) {
+            $warnings[] = 'SoftwareApplication: brak operatingSystem.';
+        }
+
+        if ( empty( $s['offers'] ) ) {
+            $warnings[] = 'SoftwareApplication: brak offers — rating w SERP wymaga ceny lub "Free".';
+        }
+
+        if ( empty( $s['aggregateRating'] ) ) {
+            $warnings[] = 'SoftwareApplication: brak aggregateRating — aktywny rich result w Google.';
+        }
+    }
+
+    private function validate_claim_review( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['claimReviewed'] ) ) {
+            $errors[] = 'ClaimReview: brak claimReviewed (wymagane — treść sprawdzanego twierdzenia).';
+        }
+
+        if ( empty( $s['reviewRating'] ) ) {
+            $errors[] = 'ClaimReview: brak reviewRating (wymagane).';
+        } else {
+            $rating = $s['reviewRating'];
+            if ( empty( $rating['ratingValue'] ) ) {
+                $errors[] = 'ClaimReview > reviewRating: brak ratingValue.';
+            }
+            if ( empty( $rating['bestRating'] ) || empty( $rating['worstRating'] ) ) {
+                $warnings[] = 'ClaimReview > reviewRating: brak bestRating / worstRating.';
+            }
+            if ( empty( $rating['alternateName'] ) ) {
+                $warnings[] = 'ClaimReview > reviewRating: brak alternateName (etykieta werdyktu, np. "Fałsz").';
+            }
+        }
+
+        if ( empty( $s['author'] ) ) {
+            $warnings[] = 'ClaimReview: brak author — zalecane dla E-E-A-T.';
+        }
+
+        if ( empty( $s['url'] ) ) {
+            $warnings[] = 'ClaimReview: brak url — zalecane.';
+        }
+    }
+
+    private function validate_qa_page( array $s, array &$errors, array &$warnings ): void {
+        $entities = $s['mainEntity'] ?? [];
+        if ( empty( $entities ) ) {
+            $errors[] = 'QAPage: brak mainEntity — wymagane pytanie z odpowiedzią.';
+            return;
+        }
+
+        $question = is_array( $entities ) && isset( $entities[0] ) ? $entities[0] : $entities;
+
+        if ( empty( $question['name'] ) ) {
+            $errors[] = 'QAPage > Question: brak name (treść pytania).';
+        }
+
+        $answers = $question['acceptedAnswer'] ?? $question['suggestedAnswer'] ?? [];
+        if ( empty( $answers ) ) {
+            $errors[] = 'QAPage > Question: brak acceptedAnswer ani suggestedAnswer.';
+        } else {
+            $answer = is_array( $answers ) && isset( $answers[0] ) ? $answers[0] : $answers;
+            if ( empty( $answer['text'] ) ) {
+                $errors[] = 'QAPage > Answer: brak text w odpowiedzi.';
+            }
+        }
+
+        $warnings[] = 'QAPage: rich results aktywne — strona powinna odpowiadać na jedno konkretne pytanie.';
+    }
+
+    private function validate_local_business( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['name'] ) ) {
+            $errors[] = 'LocalBusiness: brak name (wymagane).';
+        }
+
+        if ( empty( $s['address'] ) ) {
+            $errors[] = 'LocalBusiness: brak address (wymagane dla rich results).';
+        } else {
+            $addr = $s['address'];
+            if ( empty( $addr['streetAddress'] ) ) {
+                $warnings[] = 'LocalBusiness > address: brak streetAddress.';
+            }
+            if ( empty( $addr['addressLocality'] ) ) {
+                $warnings[] = 'LocalBusiness > address: brak addressLocality (miasto).';
+            }
+            if ( empty( $addr['addressCountry'] ) ) {
+                $warnings[] = 'LocalBusiness > address: brak addressCountry.';
+            }
+        }
+
+        if ( empty( $s['telephone'] ) ) {
+            $warnings[] = 'LocalBusiness: brak telephone — ważny sygnał lokalny.';
+        }
+
+        if ( empty( $s['openingHoursSpecification'] ) ) {
+            $warnings[] = 'LocalBusiness: brak openingHoursSpecification — zalecane.';
+        }
+
+        if ( empty( $s['geo'] ) ) {
+            $warnings[] = 'LocalBusiness: brak geo (GeoCoordinates) — ważne dla AI i Google Maps.';
+        }
+
+        if ( empty( $s['image'] ) ) {
+            $warnings[] = 'LocalBusiness: brak image — zalecane.';
+        }
+    }
+
+    private function validate_service( array $s, array &$errors, array &$warnings ): void {
+        if ( empty( $s['name'] ) ) {
+            $errors[] = 'Service: brak name (wymagane).';
+        }
+
+        if ( empty( $s['provider'] ) ) {
+            $warnings[] = 'Service: brak provider — połącz usługę z Organization przez @id.';
+        }
+
+        if ( empty( $s['description'] ) ) {
+            $warnings[] = 'Service: brak description.';
+        }
+
+        if ( empty( $s['serviceType'] ) ) {
+            $warnings[] = 'Service: brak serviceType — pomaga AI kategoryzować usługę.';
         }
     }
 }

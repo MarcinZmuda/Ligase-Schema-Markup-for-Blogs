@@ -32,19 +32,55 @@ $score_calculator = new Ligase_Score();
 
 <h1><?php esc_html_e( 'Ligase — Posty', 'ligase' ); ?></h1>
 
-<div class="ligase-toolbar">
+<?php
+$opts_toolbar = (array) get_option( 'ligase_options', array() );
+$allowed_schema_types = array( 'BlogPosting', 'Article', 'NewsArticle', 'TechArticle', 'LiveBlogPosting' );
+?>
+<div class="ligase-toolbar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+
+	<!-- Scan & fix -->
 	<button type="button" class="button button-primary" id="ligase-scan-all">
 		<?php esc_html_e( 'Skanuj wszystkie', 'ligase' ); ?>
 	</button>
 	<button type="button" class="button" id="ligase-fix-all" data-threshold="50">
-		<?php esc_html_e( 'Napraw ponizej 50 pkt', 'ligase' ); ?>
+		<?php esc_html_e( 'Napraw poniżej 50 pkt', 'ligase' ); ?>
 	</button>
+
+	<!-- Bulk validate -->
+	<button type="button" class="button" id="ligase-validate-all-btn">
+		🔍 <?php esc_html_e( 'Waliduj schema — wszystkie', 'ligase' ); ?>
+	</button>
+
+	<!-- Bulk schema type change -->
+	<div style="display:flex;align-items:center;gap:6px;margin-left:8px;padding-left:12px;border-left:1px solid #ddd;">
+		<label style="font-size:13px;white-space:nowrap;"><?php esc_html_e( 'Zmień typ dla wszystkich na:', 'ligase' ); ?></label>
+		<select id="ligase-bulk-type-select" style="height:30px;">
+			<?php foreach ( $allowed_schema_types as $t ) : ?>
+				<option value="<?php echo esc_attr( $t ); ?>"
+					<?php selected( $t, $opts_toolbar['default_schema_type'] ?? 'BlogPosting' ); ?>>
+					<?php echo esc_html( $t ); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+		<button type="button" class="button" id="ligase-bulk-type-btn">
+			<?php esc_html_e( 'Zastosuj', 'ligase' ); ?>
+		</button>
+		<span id="ligase-bulk-type-status" style="font-size:12px;color:#666;"></span>
+	</div>
+
 	<button type="button" class="button" id="ligase-bulk-fix" style="display:none;">
 		<?php esc_html_e( 'Napraw zaznaczone', 'ligase' ); ?>
 	</button>
-	<span class="ligase-toolbar-info">
-		<?php printf( esc_html__( 'Znaleziono %d postow', 'ligase' ), $total_posts ); ?>
+
+	<span class="ligase-toolbar-info" style="margin-left:auto;color:#666;font-size:13px;">
+		<?php printf( esc_html__( 'Znaleziono %d postów', 'ligase' ), $total_posts ); ?>
 	</span>
+</div>
+
+<!-- Bulk validate results -->
+<div id="ligase-validate-all-results" style="display:none;margin-bottom:16px;padding:14px 18px;background:#fff;border:1px solid #ddd;border-radius:4px;max-height:300px;overflow-y:auto;font-size:13px;">
+	<strong><?php esc_html_e( 'Wyniki walidacji schema:', 'ligase' ); ?></strong>
+	<div id="ligase-validate-all-list" style="margin-top:8px;"></div>
 </div>
 
 <div id="ligase-posts-notice" class="ligase-notice" style="display:none;"></div>
@@ -68,7 +104,8 @@ $score_calculator = new Ligase_Score();
 				$post_id     = get_the_ID();
 				$post_score  = $score_calculator->calculate_for_post( $post_id );
 				$score_val   = $post_score['score'];
-				$schema_type = get_post_meta( $post_id, '_ligase_schema_type', true ) ?: 'Article';
+				$opts_global  = (array) get_option( 'ligase_options', array() );
+				$schema_type = get_post_meta( $post_id, '_ligase_schema_type', true ) ?: ( $opts_global['default_schema_type'] ?? 'BlogPosting' );
 
 				if ( $score_val >= 70 ) {
 					$score_class = 'ligase-score-good';
@@ -145,3 +182,104 @@ $score_calculator = new Ligase_Score();
 		<pre id="ligase-json-output" class="ligase-json-preview"></pre>
 	</div>
 </div>
+
+<script>
+(function($) {
+'use strict';
+
+// ── Bulk validate all posts ──────────────────────────────────────────────────
+$('#ligase-validate-all-btn').on('click', function() {
+	var $btn = $(this).prop('disabled', true).text('⏳ Walidacja...');
+	var $results = $('#ligase-validate-all-results').show();
+	var $list = $('#ligase-validate-all-list').html('<em>Pobieranie listy postów...</em>');
+	var postIds = [];
+
+	// Collect all post IDs from table rows
+	$('tr[data-post-id]').each(function() {
+		postIds.push($(this).data('post-id'));
+	});
+
+	if (!postIds.length) {
+		$list.html('<span style="color:#999;">Brak postów na tej stronie.</span>');
+		$btn.prop('disabled', false).text('🔍 Waliduj schema — wszystkie');
+		return;
+	}
+
+	var done = 0;
+	var html = '';
+	$list.html('<em>Walidowanie ' + postIds.length + ' postów...</em>');
+
+	function validateNext(ids) {
+		if (!ids.length) {
+			$list.html(html || '<span style="color:#10B981;">✅ Wszystkie posty bez błędów.</span>');
+			$btn.prop('disabled', false).text('🔍 Waliduj schema — wszystkie');
+			return;
+		}
+		var id = ids.shift();
+		var title = $('tr[data-post-id="' + id + '"] td:nth-child(3) a').text().trim();
+
+		$.post(LIGASE.ajaxUrl, {
+			action:  'ligase_validate_post',
+			nonce:   LIGASE.nonce,
+			post_id: id
+		}).done(function(res) {
+			done++;
+			if (res.success) {
+				var d = res.data;
+				if (d.errors && d.errors.length) {
+					html += '<div style="margin:4px 0;padding:6px 10px;background:#FEF2F2;border-left:3px solid #EF4444;border-radius:2px;">'
+						+ '<strong><a href="' + (window.location.origin + '/wp-admin/post.php?post=' + id + '&action=edit') + '">' + $('<div>').text(title).html() + '</a></strong> — '
+						+ d.errors.length + ' błąd(y): ' + d.errors.map(function(e){ return $('<div>').text(e).html(); }).join(', ')
+						+ '</div>';
+				} else if (d.warnings && d.warnings.length) {
+					html += '<div style="margin:4px 0;padding:6px 10px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:2px;">'
+						+ '<strong><a href="' + (window.location.origin + '/wp-admin/post.php?post=' + id + '&action=edit') + '">' + $('<div>').text(title).html() + '</a></strong>'
+						+ '<ul style="margin:4px 0 0 16px;padding:0;">'
+						+ d.warnings.map(function(w){ return '<li style="font-size:12px;color:#92400E;">' + w + '</li>'; }).join('')
+						+ '</ul></div>';
+				}
+				$list.html('<em>(' + done + '/' + (done + ids.length) + ') — ' + (html || '✅ Brak błędów') + '</em>');
+			}
+			validateNext(ids);
+		}).fail(function() {
+			done++;
+			validateNext(ids);
+		});
+	}
+
+	validateNext(postIds.slice());
+});
+
+// ── Bulk schema type change ──────────────────────────────────────────────────
+$('#ligase-bulk-type-btn').on('click', function() {
+	var type = $('#ligase-bulk-type-select').val();
+	var $status = $('#ligase-bulk-type-status');
+
+	if (!confirm('Zmienić typ schema na "' + type + '" dla WSZYSTKICH postów w bazie? Tej operacji nie można cofnąć.')) {
+		return;
+	}
+
+	var $btn = $(this).prop('disabled', true).text('Zmieniam...');
+	$status.text('');
+
+	$.post(LIGASE.ajaxUrl, {
+		action:      'ligase_bulk_change_schema_type',
+		nonce:       LIGASE.nonce,
+		schema_type: type
+	}).done(function(res) {
+		if (res.success) {
+			$status.css('color', '#10B981').text('✅ Zaktualizowano ' + res.data.updated + ' postów.');
+			// Update badges in table
+			$('td code').text(type);
+		} else {
+			$status.css('color', '#EF4444').text('❌ ' + (res.data.message || 'Błąd'));
+		}
+		$btn.prop('disabled', false).text('Zastosuj');
+	}).fail(function() {
+		$status.css('color', '#EF4444').text('❌ Błąd połączenia');
+		$btn.prop('disabled', false).text('Zastosuj');
+	});
+});
+
+})(jQuery);
+</script>

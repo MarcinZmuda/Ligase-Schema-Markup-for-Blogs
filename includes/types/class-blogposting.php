@@ -12,7 +12,9 @@ class Ligase_Type_BlogPosting {
         $post_id   = get_the_ID();
         $author_id = (int) get_post_field( 'post_author', $post_id );
 
-        $type = get_post_meta( $post_id, '_ligase_schema_type', true ) ?: 'BlogPosting';
+        $opts           = (array) get_option( 'ligase_options', array() );
+        $global_default = $opts['default_schema_type'] ?? 'BlogPosting';
+        $type = get_post_meta( $post_id, '_ligase_schema_type', true ) ?: $global_default;
         $allowed_types = [ 'Article', 'BlogPosting', 'NewsArticle', 'TechArticle', 'LiveBlogPosting' ];
         if ( ! in_array( $type, $allowed_types, true ) ) {
             $type = 'BlogPosting';

@@ -92,6 +92,7 @@ class Ligase_Settings {
 			'ligase-ustawienia'
 		);
 
+		self::add_field( 'default_schema_type', __( 'Domyślny typ schema dla postów', 'ligase' ), self::SECTION_BEHAVIOR, 'schema_type_select' );
 		self::add_field( 'speakable_selectors', __( 'Selektory CSS (Speakable)', 'ligase' ), self::SECTION_BEHAVIOR, 'text' );
 		self::add_field( 'standalone_mode', __( 'Tryb samodzielny (standalone)', 'ligase' ), self::SECTION_BEHAVIOR, 'checkbox' );
 		self::add_field( 'force_output', __( 'Wymuszaj generowanie schema', 'ligase' ), self::SECTION_BEHAVIOR, 'checkbox' );
@@ -186,6 +187,7 @@ class Ligase_Settings {
 		$callback = match( $type ) {
 			'checkbox'   => array( __CLASS__, 'render_checkbox' ),
 			'ner_select' => array( __CLASS__, 'render_ner_select' ),
+			'schema_type_select' => array( __CLASS__, 'render_schema_type_select' ),
 			'lb_select'  => array( __CLASS__, 'render_lb_type_select' ),
 			'lb_hours'   => array( __CLASS__, 'render_lb_hours' ),
 			default      => array( __CLASS__, 'render_field' ),
@@ -255,6 +257,33 @@ class Ligase_Settings {
 		echo '<br><small style="color:#6B7280;">';
 		echo esc_html__( 'Note: aggregateRating on LocalBusiness does not generate star ratings in Google Search (Google policy since 2019). Stars only appear for Product/Service reviews.', 'ligase' );
 		echo '</small></div>';
+	}
+
+
+	/**
+	 * Render default schema type select for posts.
+	 */
+	public static function render_schema_type_select( $args ): void {
+		$options  = get_option( self::KEY, self::defaults() );
+		$current  = $options['default_schema_type'] ?? 'BlogPosting';
+		$field_id = 'ligase_field_' . $args['id'];
+		$name     = self::KEY . '[' . $args['id'] . ']';
+
+		$types = array(
+			'BlogPosting'     => __( 'BlogPosting — blog osobisty, podróże, opinie, firma', 'ligase' ),
+			'Article'         => __( 'Article — przewodniki, treści evergreen, pillar content', 'ligase' ),
+			'NewsArticle'     => __( 'NewsArticle — aktualności (wymaga Google Publisher Center)', 'ligase' ),
+			'TechArticle'     => __( 'TechArticle — tutoriale, dokumentacja, poradniki techniczne', 'ligase' ),
+			'LiveBlogPosting' => __( 'LiveBlogPosting — relacje na żywo, wydarzenia na bieżąco', 'ligase' ),
+		);
+
+		echo '<select id="' . esc_attr( $field_id ) . '" name="' . esc_attr( $name ) . '" style="min-width:320px;">';
+		foreach ( $types as $value => $label ) {
+			$sel = selected( $current, $value, false );
+			echo '<option value="' . esc_attr( $value ) . '" ' . $sel . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Typ używany dla nowych postów i postów bez indywidualnego ustawienia. Możesz nadpisać go per post w metaboxie Ligase.', 'ligase' ) . '</p>';
 	}
 
 	/**
@@ -600,6 +629,7 @@ class Ligase_Settings {
 			'ner_provider'     => '',
 			'ner_api_key'      => '',
 			// LocalBusiness
+			'default_schema_type' => 'BlogPosting',
 			'lb_type'          => 'LocalBusiness',
 			'lb_service_area'  => '',
 			'lb_name'          => '',
